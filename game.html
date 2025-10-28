@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐍 Two Paths to Enlightenment: Snake Learning Game</title>
+<style>
+  body {
+    font-family: "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #fff3e0, #e0f7fa);
+    text-align: center;
+  }
+  #gameBox {
+    margin: 20px auto;
+    width: 420px;
+  }
+  canvas {
+    background: #fafafa;
+    border: 2px solid #333;
+  }
+  #questionBox {
+    background: #fffde7;
+    border-left: 5px solid #81c784;
+    border-radius: 5px;
+    width: 90%;
+    max-width: 700px;
+    margin: 20px auto;
+    padding: 10px;
+    display: none;
+    text-align: left;
+  }
+  #question {
+    font-weight: bold;
+  }
+  #answers button {
+    margin: 4px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    background: #ffe0b2;
+    cursor: pointer;
+  }
+  #answers button:hover {
+    background: #ffcc80;
+  }
+  #msg {
+    margin: 10px;
+    font-weight: bold;
+  }
+  #startBtn {
+    background: #81c784;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: white;
+  }
+</style>
+</head>
+<body>
+<h1>🐍 Two Paths to Enlightenment – Snake Learning Game</h1>
+<p>Eat food to grow your knowledge! After each level, answer a question to progress.</p>
+<div id="gameBox">
+  <canvas id="snakeGame" width="400" height="400"></canvas>
+</div>
+<div id="questionBox">
+  <div id="question"></div>
+  <div id="answers"></div>
+  <div id="msg"></div>
+</div>
+<button id="startBtn">Start Game</button>
+
+<script>
+// === FULL QUIZ SET: Covers ALL Notes ===
+const quiz = [
+ {q:"What two religions originated in ancient India and focused on enlightenment?",
+  opts:["Hinduism and Buddhism","Judaism and Christianity","Islam and Sikhism"], ans:"Hinduism and Buddhism"},
+ {q:"What ancient rivers supported early Indian civilizations?",
+  opts:["Indus and Ganges","Nile and Tigris","Amazon and Yangtze"], ans:"Indus and Ganges"},
+ {q:"Which language and sacred hymns did the Aryans bring to India?",
+  opts:["Sanskrit and the Vedas","Hebrew and the Torah","Pali and the Sutras"], ans:"Sanskrit and the Vedas"},
+ {q:"Which texts form the foundation of Hindu beliefs?",
+  opts:["Vedas and Upanishads","Tripitaka and Sutras","Bible and Psalms"], ans:"Vedas and Upanishads"},
+ {q:"Hinduism has no single founder and evolved from what traditions?",
+  opts:["Vedic traditions","Buddhist teachings","Greek philosophy"], ans:"Vedic traditions"},
+ {q:"What do the Laws of Manu describe?",
+  opts:["Social duties and caste structure","Meditation techniques","Trade routes in Asia"], ans:"Social duties and caste structure"},
+ {q:"Who are the four main Hindu castes?",
+  opts:["Brahmins, Kshatriyas, Vaishyas, Shudras","Priests, Monks, Warriors, Kings","Farmers, Slaves, Scholars, Poets"], ans:"Brahmins, Kshatriyas, Vaishyas, Shudras"},
+ {q:"In Hinduism, what determines how you're reborn?",
+  opts:["Karma","Faith","Wealth"], ans:"Karma"},
+ {q:"What is dharma in Hinduism?",
+  opts:["Duty or right action","Prayer","Meditation"], ans:"Duty or right action"},
+ {q:"What is moksha?",
+  opts:["Liberation from rebirth","A form of prayer","A sacred mountain"], ans:"Liberation from rebirth"},
+ {q:"Who are major Hindu deities?",
+  opts:["Vishnu, Shiva, Devi","Zeus, Hera, Poseidon","Brahma, Buddha, Mahavira"], ans:"Vishnu, Shiva, Devi"},
+ {q:"Which Hindu path emphasizes devotion and love?",
+  opts:["Bhakti","Karma","Jnana"], ans:"Bhakti"},
+ {q:"Which Hindu path focuses on selfless good deeds?",
+  opts:["Karma Yoga","Bhakti Yoga","Meditation"], ans:"Karma Yoga"},
+ {q:"Who was Siddhartha Gautama before becoming the Buddha?",
+  opts:["A prince","A farmer","A soldier"], ans:"A prince"},
+ {q:"What event led Siddhartha to leave his palace?",
+  opts:["Seeing suffering, sickness, and death","A vision of gods","A war"], ans:"Seeing suffering, sickness, and death"},
+ {q:"Where did Siddhartha reach enlightenment?",
+  opts:["Under the Bodhi tree","In the Himalayas","At the Ganges River"], ans:"Under the Bodhi tree"},
+ {q:"What does 'Buddha' mean?",
+  opts:["The Enlightened One","The Teacher","The Divine"], ans:"The Enlightened One"},
+ {q:"What is the First Noble Truth?",
+  opts:["Life is filled with suffering","Desire brings joy","All life is illusion"], ans:"Life is filled with suffering"},
+ {q:"According to the Second Noble Truth, suffering comes from what?",
+  opts:["Desire and attachment","Evil spirits","Fate"], ans:"Desire and attachment"},
+ {q:"What ends suffering according to the Third Noble Truth?",
+  opts:["Ending desire","Charity","Rituals"], ans:"Ending desire"},
+ {q:"What is the Fourth Noble Truth?",
+  opts:["Follow the Eightfold Path","Pray to gods","Respect your caste"], ans:"Follow the Eightfold Path"},
+ {q:"What is the goal of the Eightfold Path?",
+  opts:["To reach enlightenment and end desire","To gain power","To serve the gods"], ans:"To reach enlightenment and end desire"},
+ {q:"Which of these is NOT part of the Eightfold Path?",
+  opts:["Right Worship","Right Speech","Right Action"], ans:"Right Worship"},
+ {q:"What did the Buddha teach about the caste system?",
+  opts:["It was wrong and unnecessary","It was sacred","It was needed for order"], ans:"It was wrong and unnecessary"},
+ {q:"According to Buddhism, who can achieve nirvana?",
+  opts:["Anyone, regardless of birth","Only priests","Only men"], ans:"Anyone, regardless of birth"},
+ {q:"Which emperor spread Buddhism after a great war?",
+  opts:["Ashoka","Akbar","Chandragupta"], ans:"Ashoka"},
+ {q:"What are stupas?",
+  opts:["Dome-shaped monuments for Buddhism","Hindu temples","Palaces"], ans:"Dome-shaped monuments for Buddhism"},
+ {q:"Where did Buddhism spread to?",
+  opts:["Sri Lanka, China, and East Asia","Only India","Europe and Africa"], ans:"Sri Lanka, China, and East Asia"},
+ {q:"What is the ultimate goal in Buddhism?",
+  opts:["Nirvana","Moksha","Heaven"], ans:"Nirvana"},
+ {q:"What is the ultimate goal in Hinduism?",
+  opts:["Moksha","Nirvana","Samsara"], ans:"Moksha"},
+ {q:"Does Hinduism accept the caste system?",
+  opts:["Yes","No","Partially"], ans:"Yes"},
+ {q:"Does Buddhism accept the caste system?",
+  opts:["No","Yes","Sometimes"], ans:"No"},
+ {q:"Both religions believe in what concept of rebirth?",
+  opts:["Reincarnation","Creationism","Polytheism"], ans:"Reincarnation"},
+ {q:"Which religion emphasizes social duty more?",
+  opts:["Hinduism","Buddhism","Neither"], ans:"Hinduism"},
+ {q:"Which emphasizes individual effort more?",
+  opts:["Buddhism","Hinduism","Christianity"], ans:"Buddhism"},
+ {q:"Which texts are key to Hinduism?",
+  opts:["Vedas and Upanishads","Tripitaka","Bible"], ans:"Vedas and Upanishads"},
+ {q:"Which texts are key to Buddhism?",
+  opts:["Tripitaka and Sutras","Vedas and Laws of Manu","Quran"], ans:"Tripitaka and Sutras"},
+ {q:"What practices from these religions are now global?",
+  opts:["Meditation, yoga, mindfulness","Ritual sacrifice","Temple building"], ans:"Meditation, yoga, mindfulness"},
+ {q:"Which core values unite both religions?",
+  opts:["Compassion, peace, moral living","Wealth, power, fame","War, pride, conquest"], ans:"Compassion, peace, moral living"}
+];
+
+// === Snake Game Logic ===
+const cvs = document.getElementById("snakeGame");
+const ctx = cvs.getContext("2d");
+const box = 20;
+let snake, food, d, score, playing = false, qIndex = 0;
+
+function resetGame(){
+  snake = [{x: 9*box, y: 10*box}];
+  food = {x: Math.floor(Math.random()*19)*box, y: Math.floor(Math.random()*19)*box};
+  d = "RIGHT"; score = 0;
+}
+
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft" && d!=="RIGHT") d="LEFT";
+  else if(e.key==="ArrowUp" && d!=="DOWN") d="UP";
+  else if(e.key==="ArrowRight" && d!=="LEFT") d="RIGHT";
+  else if(e.key==="ArrowDown" && d!=="UP") d="DOWN";
+});
+
+function draw(){
+  if(!playing) return;
+  ctx.fillStyle="#fafafa";
+  ctx.fillRect(0,0,400,400);
+  for(let i=0;i<snake.length;i++){
+    ctx.fillStyle=i==0?"#4caf50":"#81c784";
+    ctx.fillRect(snake[i].x,snake[i].y,box,box);
+  }
+  ctx.fillStyle="#ff7043";
+  ctx.fillRect(food.x,food.y,box,box);
+
+  let headX=snake[0].x, headY=snake[0].y;
+  if(d==="LEFT") headX-=box;
+  if(d==="UP") headY-=box;
+  if(d==="RIGHT") headX+=box;
+  if(d==="DOWN") headY+=box;
+
+  if(headX===food.x && headY===food.y){
+    score++; food={x:Math.floor(Math.random()*19)*box,y:Math.floor(Math.random()*19)*box};
+  } else snake.pop();
+
+  let newHead={x:headX,y:headY};
+  if(headX<0||headY<0||headX>=400||headY>=400||collision(newHead,snake)){
+    showQuestion();
+    return;
+  }
+  snake.unshift(newHead);
+  ctx.fillStyle="#333";
+  ctx.fillText("Score: "+score,10,390);
+  if(score>=5) showQuestion();
+}
+
+function collision(h,arr){return arr.some(a=>a.x===h.x&&a.y===h.y);}
+
+function loop(){if(!playing)return; draw(); setTimeout(loop,100);}
+function startSnake(){resetGame(); playing=true; loop();}
+
+function showQuestion(){
+  playing=false;
+  if(qIndex>=quiz.length){
+    document.getElementById("questionBox").innerHTML="<h2>🎉 You reached Enlightenment! 🕉️</h2>";
+    return;
+  }
+  const q=quiz[qIndex];
+  const qBox=document.getElementById("questionBox");
+  qBox.style.display="block";
+  document.getElementById("question").textContent=q.q;
+  const aDiv=document.getElementById("answers");
+  aDiv.innerHTML="";
+  q.opts.forEach(opt=>{
+    const b=document.createElement("button");
+    b.textContent=opt;
+    b.onclick=()=>checkAnswer(opt);
+    aDiv.appendChild(b);
+  });
+  document.getElementById("msg").textContent="";
+}
+
+function checkAnswer(opt){
+  const correct=quiz[qIndex].ans;
+  const msg=document.getElementById("msg");
+  if(opt===correct){
+    msg.textContent="✅ Correct!";
+    msg.style.color="green";
+    qIndex++;
+    setTimeout(()=>{
+      document.getElementById("questionBox").style.display="none";
+      startSnake();
+    },1000);
+  } else {
+    msg.textContent="❌ Try again!";
+    msg.style.color="red";
+  }
+}
+
+document.getElementById("startBtn").onclick=()=>{
+  document.getElementById("startBtn").style.display="none";
+  qIndex=0;
+  startSnake();
+};
+</script>
+</body>
+</html>
