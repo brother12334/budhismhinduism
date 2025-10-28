@@ -3,72 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🐍 Two Paths to Enlightenment: Snake Learning Game</title>
+<title>Snake Learning Game</title>
 <style>
-  body {
-    font-family: "Segoe UI", sans-serif;
-    background: linear-gradient(135deg, #fff3e0, #e0f7fa);
-    text-align: center;
-  }
-  #gameBox {
-    margin: 20px auto;
-    width: 420px;
+  body, html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #fafafa;
   }
   canvas {
-    background: #fafafa;
-    border: 2px solid #333;
+    display: block;
+    background: #eeeeee;
+  }
+  /* Popup modal styles */
+  #questionModal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    color: #333;
+    font-family: "Segoe UI", sans-serif;
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
   }
   #questionBox {
-    background: #fffde7;
-    border-left: 5px solid #81c784;
-    border-radius: 5px;
-    width: 90%;
-    max-width: 700px;
-    margin: 20px auto;
-    padding: 10px;
-    display: none;
-    text-align: left;
-  }
-  #question {
-    font-weight: bold;
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    max-width: 600px;
+    text-align: center;
   }
   #answers button {
-    margin: 4px;
-    padding: 8px 14px;
-    border-radius: 6px;
+    margin: 5px;
+    padding: 10px 16px;
     border: none;
-    background: #ffe0b2;
+    border-radius: 6px;
     cursor: pointer;
-  }
-  #answers button:hover {
     background: #ffcc80;
   }
-  #msg {
-    margin: 10px;
-    font-weight: bold;
+  #answers button:hover {
+    background: #ffb74d;
   }
-  #startBtn {
-    background: #81c784;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    cursor: pointer;
-    color: white;
+  #msg {
+    margin-top: 10px;
+    font-weight: bold;
   }
 </style>
 </head>
 <body>
-<h1>🐍 Two Paths to Enlightenment – Snake Learning Game</h1>
-<p>Eat food to grow your knowledge! After each level, answer a question to progress.</p>
-<div id="gameBox">
-  <canvas id="snakeGame" width="400" height="400"></canvas>
+
+<canvas id="snakeGame"></canvas>
+
+<div id="questionModal">
+  <div id="questionBox">
+    <div id="question"></div>
+    <div id="answers"></div>
+    <div id="msg"></div>
+  </div>
 </div>
-<div id="questionBox">
-  <div id="question"></div>
-  <div id="answers"></div>
-  <div id="msg"></div>
-</div>
-<button id="startBtn">Start Game</button>
 
 <script>
 // === FULL QUIZ SET: Covers ALL Notes ===
@@ -156,16 +149,25 @@ const quiz = [
 // === Snake Game Logic ===
 const cvs = document.getElementById("snakeGame");
 const ctx = cvs.getContext("2d");
-const box = 20;
-let snake, food, d, score, playing = false, qIndex = 0;
+let box, snake, food, d, score, playing=false, qIndex=0;
 
-function resetGame(){
-  snake = [{x: 9*box, y: 10*box}];
-  food = {x: Math.floor(Math.random()*19)*box, y: Math.floor(Math.random()*19)*box};
-  d = "RIGHT"; score = 0;
+function resizeCanvas(){
+  cvs.width = window.innerWidth;
+  cvs.height = window.innerHeight;
+  box = 20;
 }
 
-document.addEventListener("keydown",e=>{
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
+function resetGame(){
+  snake = [{x: Math.floor(cvs.width/2/box)*box, y: Math.floor(cvs.height/2/box)*box}];
+  food = {x: Math.floor(Math.random()*(cvs.width/box))*box, y: Math.floor(Math.random()*(cvs.height/box))*box};
+  d = "RIGHT";
+  score = 0;
+}
+
+document.addEventListener("keydown", e=>{
   if(e.key==="ArrowLeft" && d!=="RIGHT") d="LEFT";
   else if(e.key==="ArrowUp" && d!=="DOWN") d="UP";
   else if(e.key==="ArrowRight" && d!=="LEFT") d="RIGHT";
@@ -174,50 +176,56 @@ document.addEventListener("keydown",e=>{
 
 function draw(){
   if(!playing) return;
-  ctx.fillStyle="#fafafa";
-  ctx.fillRect(0,0,400,400);
-  for(let i=0;i<snake.length;i++){
-    ctx.fillStyle=i==0?"#4caf50":"#81c784";
-    ctx.fillRect(snake[i].x,snake[i].y,box,box);
-  }
+  ctx.fillStyle="#eeeeee";
+  ctx.fillRect(0,0,cvs.width,cvs.height);
+  snake.forEach((s,i)=>{
+    ctx.fillStyle = i===0 ? "#4caf50" : "#81c784";
+    ctx.fillRect(s.x,s.y,box,box);
+  });
   ctx.fillStyle="#ff7043";
-  ctx.fillRect(food.x,food.y,box,box);
+  ctx.fillRect(food.x, food.y, box, box);
 
-  let headX=snake[0].x, headY=snake[0].y;
-  if(d==="LEFT") headX-=box;
-  if(d==="UP") headY-=box;
-  if(d==="RIGHT") headX+=box;
-  if(d==="DOWN") headY+=box;
+  let headX = snake[0].x, headY = snake[0].y;
+  if(d==="LEFT") headX -= box;
+  if(d==="UP") headY -= box;
+  if(d==="RIGHT") headX += box;
+  if(d==="DOWN") headY += box;
 
   if(headX===food.x && headY===food.y){
-    score++; food={x:Math.floor(Math.random()*19)*box,y:Math.floor(Math.random()*19)*box};
+    score++; 
+    food={x:Math.floor(Math.random()*(cvs.width/box))*box, y:Math.floor(Math.random()*(cvs.height/box))*box};
   } else snake.pop();
 
-  let newHead={x:headX,y:headY};
-  if(headX<0||headY<0||headX>=400||headY>=400||collision(newHead,snake)){
+  let newHead = {x:headX, y:headY};
+  if(headX<0||headY<0||headX>=cvs.width||headY>=cvs.height||collision(newHead,snake)){
     showQuestion();
     return;
   }
   snake.unshift(newHead);
+
   ctx.fillStyle="#333";
-  ctx.fillText("Score: "+score,10,390);
+  ctx.font="20px Arial";
+  ctx.fillText("Score: "+score, 10, cvs.height-10);
+
   if(score>=5) showQuestion();
 }
 
-function collision(h,arr){return arr.some(a=>a.x===h.x&&a.y===h.y);}
+function collision(h,arr){ return arr.some(a=>a.x===h.x&&a.y===h.y); }
 
-function loop(){if(!playing)return; draw(); setTimeout(loop,100);}
-function startSnake(){resetGame(); playing=true; loop();}
+function loop(){ if(!playing) return; draw(); setTimeout(loop,100); }
+function startSnake(){ resetGame(); playing=true; loop(); }
 
 function showQuestion(){
   playing=false;
   if(qIndex>=quiz.length){
-    document.getElementById("questionBox").innerHTML="<h2>🎉 You reached Enlightenment! 🕉️</h2>";
+    document.getElementById("questionModal").innerHTML="<h2 style='color:white;text-align:center;margin-top:30vh;'>🎉 You reached Enlightenment! 🕉️</h2>";
+    document.getElementById("questionModal").style.display="flex";
     return;
   }
   const q=quiz[qIndex];
-  const qBox=document.getElementById("questionBox");
-  qBox.style.display="block";
+  const modal=document.getElementById("questionModal");
+  modal.style.display="flex";
+  document.getElementById("questionBox").style.display="block";
   document.getElementById("question").textContent=q.q;
   const aDiv=document.getElementById("answers");
   aDiv.innerHTML="";
@@ -238,7 +246,7 @@ function checkAnswer(opt){
     msg.style.color="green";
     qIndex++;
     setTimeout(()=>{
-      document.getElementById("questionBox").style.display="none";
+      document.getElementById("questionModal").style.display="none";
       startSnake();
     },1000);
   } else {
@@ -247,11 +255,9 @@ function checkAnswer(opt){
   }
 }
 
-document.getElementById("startBtn").onclick=()=>{
-  document.getElementById("startBtn").style.display="none";
-  qIndex=0;
-  startSnake();
-};
+// Start game immediately
+startSnake();
 </script>
+
 </body>
 </html>
