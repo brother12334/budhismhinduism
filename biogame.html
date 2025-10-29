@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snake Learning Game - Water Unit</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #fafafa;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    background: #eeeeee;
+  }
+  #questionModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    color: #333;
+    font-family: "Segoe UI", sans-serif;
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+  }
+  #questionBox {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    max-width: 600px;
+    text-align: center;
+  }
+  #answers button {
+    margin: 5px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #90caf9;
+  }
+  #answers button:hover {
+    background: #64b5f6;
+  }
+  #msg {
+    margin-top: 10px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="snakeGame"></canvas>
+
+<div id="questionModal">
+  <div id="questionBox">
+    <div id="question"></div>
+    <div id="answers"></div>
+    <div id="msg"></div>
+  </div>
+</div>
+
+<script>
+// === QUIZ SET: WATER UNIT ===
+const quiz = [
+ {q:"Water molecules stick together because they have ___.", opts:["cohesion","adhesion","surface tension"], ans:"cohesion"},
+ {q:"Water has a high boiling point known as ___.", opts:["high specific heat","high surface tension","high viscosity"], ans:"high specific heat"},
+ {q:"The clinging of one substance to another is ___.", opts:["adhesion","cohesion","evaporation"], ans:"adhesion"},
+ {q:"Cohesion is related to ___.", opts:["surface tension","adhesion","evaporative cooling"], ans:"surface tension"},
+ {q:"The tension on the surface of water caused by hydrogen molecules is called ___.", opts:["surface tension","adhesion","specific heat"], ans:"surface tension"},
+ {q:"___ conducts water from the roots to the leaves.", opts:["Xylem","Phloem","Stomata"], ans:"Xylem"},
+ {q:"___ conducts water from the leaves to the roots.", opts:["Phloem","Xylem","Chlorophyll"], ans:"Phloem"},
+ {q:"Thermal energy is associated with ___.", opts:["random movement of atoms and molecules","light energy","electrical flow"], ans:"random movement of atoms and molecules"},
+ {q:"Thermal energy transferred from warm to cool matter is called ___.", opts:["heat","temperature","energy flow"], ans:"heat"},
+ {q:"Temperature measures the ___.", opts:["intensity of heat","amount of water","pressure of air"], ans:"intensity of heat"},
+ {q:"Evaporative cooling happens when ___.", opts:["a substance evaporates and the surface cools","ice melts","water freezes"], ans:"a substance evaporates and the surface cools"},
+ {q:"Water can exist as ___.", opts:["gas, liquid, or solid","liquid or solid only","gas only"], ans:"gas, liquid, or solid"},
+ {q:"Water is less dense as a solid because of ___.", opts:["hydrogen bonding","air bubbles","temperature drop"], ans:"hydrogen bonding"},
+ {q:"When water freezes, each molecule forms ___.", opts:["stable hydrogen bonds","unstable covalent bonds","ionic bonds"], ans:"stable hydrogen bonds"},
+ {q:"As ice crystals form, water molecules are ___.", opts:["less densely packed","more densely packed","unchanged"], ans:"less densely packed"},
+ {q:"Because ice is less dense than water, it ___.", opts:["floats","sinks","dissolves"], ans:"floats"}
+];
+
+// === SNAKE GAME ===
+const cvs = document.getElementById("snakeGame");
+const ctx = cvs.getContext("2d");
+let box, snake, food, d, score, playing=false, qIndex=0;
+
+function resizeCanvas(){
+  // ensure perfect fit to screen and align grid to integer boxes
+  const w = Math.floor(window.innerWidth / 20) * 20;
+  const h = Math.floor(window.innerHeight / 20) * 20;
+  cvs.width = w;
+  cvs.height = h;
+  box = 20;
+}
+
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
+function resetGame(){
+  snake = [{x: Math.floor(cvs.width/2/box)*box, y: Math.floor(cvs.height/2/box)*box}];
+  food = {
+    x: Math.floor(Math.random()*(cvs.width/box))*box,
+    y: Math.floor(Math.random()*(cvs.height/box))*box
+  };
+  d = "RIGHT";
+  score = 0;
+}
+
+document.addEventListener("keydown", e=>{
+  if(e.key==="ArrowLeft" && d!=="RIGHT") d="LEFT";
+  else if(e.key==="ArrowUp" && d!=="DOWN") d="UP";
+  else if(e.key==="ArrowRight" && d!=="LEFT") d="RIGHT";
+  else if(e.key==="ArrowDown" && d!=="UP") d="DOWN";
+});
+
+function draw(){
+  if(!playing) return;
+  ctx.fillStyle="#eeeeee";
+  ctx.fillRect(0,0,cvs.width,cvs.height);
+  snake.forEach((s,i)=>{
+    ctx.fillStyle = i===0 ? "#4caf50" : "#81c784";
+    ctx.fillRect(s.x,s.y,box,box);
+  });
+  ctx.fillStyle="#ff7043";
+  ctx.fillRect(food.x, food.y, box, box);
+
+  let headX = snake[0].x, headY = snake[0].y;
+  if(d==="LEFT") headX -= box;
+  if(d==="UP") headY -= box;
+  if(d==="RIGHT") headX += box;
+  if(d==="DOWN") headY += box;
+
+  if(headX===food.x && headY===food.y){
+    score++; 
+    food={x:Math.floor(Math.random()*(cvs.width/box))*box, y:Math.floor(Math.random()*(cvs.height/box))*box};
+  } else snake.pop();
+
+  let newHead = {x:headX, y:headY};
+  if(headX<0||headY<0||headX>=cvs.width||headY>=cvs.height||collision(newHead,snake)){
+    showQuestion();
+    return;
+  }
+  snake.unshift(newHead);
+
+  ctx.fillStyle="#333";
+  ctx.font="20px Arial";
+  ctx.fillText("Score: "+score, 10, cvs.height-10);
+
+  if(score>=5) showQuestion();
+}
+
+function collision(h,arr){ return arr.some(a=>a.x===h.x&&a.y===h.y); }
+
+function loop(){ if(!playing) return; draw(); setTimeout(loop,100); }
+function startSnake(){ resetGame(); playing=true; loop(); }
+
+function showQuestion(){
+  playing=false;
+  if(qIndex>=quiz.length){
+    document.getElementById("questionModal").innerHTML="<h2 style='color:white;text-align:center;margin-top:30vh;'>💧 You mastered Water Properties! 🌊</h2>";
+    document.getElementById("questionModal").style.display="flex";
+    return;
+  }
+  const q=quiz[qIndex];
+  const modal=document.getElementById("questionModal");
+  modal.style.display="flex";
+  document.getElementById("questionBox").style.display="block";
+  document.getElementById("question").textContent=q.q;
+  const aDiv=document.getElementById("answers");
+  aDiv.innerHTML="";
+  q.opts.forEach(opt=>{
+    const b=document.createElement("button");
+    b.textContent=opt;
+    b.onclick=()=>checkAnswer(opt);
+    aDiv.appendChild(b);
+  });
+  document.getElementById("msg").textContent="";
+}
+
+function checkAnswer(opt){
+  const correct=quiz[qIndex].ans;
+  const msg=document.getElementById("msg");
+  if(opt===correct){
+    msg.textContent="✅ Correct!";
+    msg.style.color="green";
+    qIndex++;
+    setTimeout(()=>{
+      document.getElementById("questionModal").style.display="none";
+      startSnake();
+    },1000);
+  } else {
+    msg.textContent="❌ Try again!";
+    msg.style.color="red";
+  }
+}
+
+// Start fullscreen and game automatically
+document.documentElement.requestFullscreen?.();
+startSnake();
+</script>
+</body>
+</html>
