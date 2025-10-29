@@ -8,10 +8,10 @@
   html, body {
     margin: 0;
     padding: 0;
-    background: #fafafa;
     height: 100%;
     width: 100%;
     overflow: hidden;
+    background: #fafafa;
   }
   canvas {
     display: block;
@@ -65,7 +65,7 @@
 </div>
 
 <script>
-// === QUIZ SET: WATER UNIT ===
+// === QUIZ: WATER UNIT ===
 const quiz = [
  {q:"Water molecules stick together because they have ___.", opts:["cohesion","adhesion","surface tension"], ans:"cohesion"},
  {q:"Water has a high boiling point known as ___.", opts:["high specific heat","high surface tension","high viscosity"], ans:"high specific heat"},
@@ -85,18 +85,18 @@ const quiz = [
  {q:"Because ice is less dense than water, it ___.", opts:["floats","sinks","dissolves"], ans:"floats"}
 ];
 
-// === SNAKE GAME ===
+// === GAME ===
 const cvs = document.getElementById("snakeGame");
 const ctx = cvs.getContext("2d");
-let box, snake, food, d, score, playing=false, qIndex=0;
+let box = 20;
+let snake, food, d, score, playing=false, qIndex=0, speed=80, foodsEaten=0;
 
 function resizeCanvas(){
-  // ensure perfect fit to screen and align grid to integer boxes
-  const w = Math.floor(window.innerWidth / 20) * 20;
-  const h = Math.floor(window.innerHeight / 20) * 20;
+  // make width/height perfectly divisible by box to align borders
+  const w = Math.floor(window.innerWidth / box) * box;
+  const h = Math.floor(window.innerHeight / box) * box;
   cvs.width = w;
   cvs.height = h;
-  box = 20;
 }
 
 window.addEventListener("resize", resizeCanvas);
@@ -104,12 +104,11 @@ resizeCanvas();
 
 function resetGame(){
   snake = [{x: Math.floor(cvs.width/2/box)*box, y: Math.floor(cvs.height/2/box)*box}];
-  food = {
-    x: Math.floor(Math.random()*(cvs.width/box))*box,
-    y: Math.floor(Math.random()*(cvs.height/box))*box
-  };
+  food = {x: Math.floor(Math.random()*(cvs.width/box))*box, y: Math.floor(Math.random()*(cvs.height/box))*box};
   d = "RIGHT";
   score = 0;
+  foodsEaten = 0;
+  speed = 80;
 }
 
 document.addEventListener("keydown", e=>{
@@ -123,6 +122,7 @@ function draw(){
   if(!playing) return;
   ctx.fillStyle="#eeeeee";
   ctx.fillRect(0,0,cvs.width,cvs.height);
+
   snake.forEach((s,i)=>{
     ctx.fillStyle = i===0 ? "#4caf50" : "#81c784";
     ctx.fillRect(s.x,s.y,box,box);
@@ -130,50 +130,77 @@ function draw(){
   ctx.fillStyle="#ff7043";
   ctx.fillRect(food.x, food.y, box, box);
 
-  let headX = snake[0].x, headY = snake[0].y;
+  let headX = snake[0].x;
+  let headY = snake[0].y;
+
   if(d==="LEFT") headX -= box;
   if(d==="UP") headY -= box;
   if(d==="RIGHT") headX += box;
   if(d==="DOWN") headY += box;
 
-  if(headX===food.x && headY===food.y){
-    score++; 
-    food={x:Math.floor(Math.random()*(cvs.width/box))*box, y:Math.floor(Math.random()*(cvs.height/box))*box};
-  } else snake.pop();
+  if(headX === food.x && headY === food.y){
+    score++;
+    foodsEaten++;
+    // increase difficulty every few foods
+    if(foodsEaten % 5 === 0 && speed > 30) speed -= 5;
+    food = {
+      x: Math.floor(Math.random()*(cvs.width/box))*box,
+      y: Math.floor(Math.random()*(cvs.height/box))*box
+    };
+  } else {
+    snake.pop();
+  }
 
-  let newHead = {x:headX, y:headY};
-  if(headX<0||headY<0||headX>=cvs.width||headY>=cvs.height||collision(newHead,snake)){
+  let newHead = {x: headX, y: headY};
+
+  // check wall or self collision
+  if(headX < 0 || headY < 0 || headX >= cvs.width || headY >= cvs.height || collision(newHead, snake)){
     showQuestion();
     return;
   }
+
   snake.unshift(newHead);
 
   ctx.fillStyle="#333";
   ctx.font="20px Arial";
   ctx.fillText("Score: "+score, 10, cvs.height-10);
 
-  if(score>=5) showQuestion();
+  // every 2 foods → ask question
+  if(foodsEaten > 0 && foodsEaten % 2 === 0){
+    showQuestion();
+    foodsEaten = 0;
+    return;
+  }
+
+  setTimeout(draw, speed);
 }
 
-function collision(h,arr){ return arr.some(a=>a.x===h.x&&a.y===h.y); }
+function collision(head, arr){
+  return arr.some(a=>a.x===head.x && a.y===head.y);
+}
 
-function loop(){ if(!playing) return; draw(); setTimeout(loop,100); }
-function startSnake(){ resetGame(); playing=true; loop(); }
+function startSnake(){
+  resetGame();
+  playing = true;
+  draw();
+}
 
 function showQuestion(){
-  playing=false;
-  if(qIndex>=quiz.length){
+  playing = false;
+  if(qIndex >= quiz.length){
     document.getElementById("questionModal").innerHTML="<h2 style='color:white;text-align:center;margin-top:30vh;'>💧 You mastered Water Properties! 🌊</h2>";
     document.getElementById("questionModal").style.display="flex";
     return;
   }
-  const q=quiz[qIndex];
-  const modal=document.getElementById("questionModal");
-  modal.style.display="flex";
-  document.getElementById("questionBox").style.display="block";
-  document.getElementById("question").textContent=q.q;
-  const aDiv=document.getElementById("answers");
-  aDiv.innerHTML="";
+
+  const q = quiz[qIndex];
+  const modal = document.getElementById("questionModal");
+  modal.style.display = "flex";
+  document.getElementById("questionBox").style.display = "block";
+  document.getElementById("question").textContent = q.q;
+
+  const aDiv = document.getElementById("answers");
+  aDiv.innerHTML = "";
   q.opts.forEach(opt=>{
     const b=document.createElement("button");
     b.textContent=opt;
@@ -184,23 +211,23 @@ function showQuestion(){
 }
 
 function checkAnswer(opt){
-  const correct=quiz[qIndex].ans;
-  const msg=document.getElementById("msg");
-  if(opt===correct){
-    msg.textContent="✅ Correct!";
-    msg.style.color="green";
+  const correct = quiz[qIndex].ans;
+  const msg = document.getElementById("msg");
+  if(opt === correct){
+    msg.textContent = "✅ Correct! " + quiz[qIndex].q.replace("___", correct);
+    msg.style.color = "green";
     qIndex++;
     setTimeout(()=>{
       document.getElementById("questionModal").style.display="none";
       startSnake();
-    },1000);
+    },1200);
   } else {
-    msg.textContent="❌ Try again!";
-    msg.style.color="red";
+    msg.textContent = "❌ Try again!";
+    msg.style.color = "red";
   }
 }
 
-// Start fullscreen and game automatically
+// request fullscreen immediately
 document.documentElement.requestFullscreen?.();
 startSnake();
 </script>
